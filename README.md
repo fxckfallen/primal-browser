@@ -6,4 +6,9 @@ npm install
 npm start
 ```
 - [x] tabs
-- [ ] downloads (in progress)
+- [x] downloads
+- [ ] settings
+- [ ] url-bar
+- [ ] plugins
+- [ ] bookmarks
+- [ ] building
