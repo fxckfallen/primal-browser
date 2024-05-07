@@ -5,7 +5,7 @@ const remote = require('electron').remote;
 const ipc = require('electron').ipcRenderer
 const win = remote.getCurrentWindow(); /* Note this is different to the
 html global `window` variable */
-
+let webview;
 // When document has loaded, initialise
 document.onreadystatechange = (event) => {
     if (document.readyState == "complete") {
@@ -54,107 +54,87 @@ function handleWindowControls() {
     }
 }
 
-let currentTab = 0;
-let lastTab = 2;
-function setTabState (tabIndex, state = false) {
-    let tabs = document.querySelectorAll(".view");
-    
-    for (let i = 0; i < tabs.length; ++i) {
-        if (i == tabIndex) tabs[i].style.height = state ? "96%" : "0%"
+class Tabs {
+    constructor() {
+        this.currentTab = 0;
+        this.tabs = []
     }
-    currentTab = tabIndex
-}
 
-createTab = (url) => {
-    lastTab++;
-    document.querySelector('.tab-new').remove();
-    const newTab = `
-        <div class="tab" data-url="${url}" data-id="${lastTab}">
-            <img src="http://www.google.com/s2/favicons?domain=${new URL(url).hostname}" alt="" class="tab-icon">
-            <p class="tab-title">
-                Google
-            </p>
-            <img src="icons/close-k-10.png" alt="tab-close" class="tab-close">
-        </div>
-        <div class="tab tab-new">
-            <img src="icons/plus.png" alt="new-tab" class="">
-        </div>
-    `
-    const newView = `
-        <webview class="view" data-id="${lastTab}" src="${url}" style="width:100%; height:96%"></webview>
-    `
-    
-    document.querySelector('.tabs').innerHTML += newTab;
-    document.querySelector('#main').innerHTML += newView;
-    document.querySelector('.tab-new').addEventListener('click', () => {createTab('http://google.com')})
-    currentTab = lastTab;
-}
-
-function splitTabs(tabLeft, tabRight) {
-    let tabs = document.querySelectorAll(".view");
-    
-    for (let i = 0; i < tabs.length; ++i) {
-        if (i == tabLeft)
-        {
-            tabs[i].style.height = "50%"
-        }
-        if (i == tabRight) {
-            tabs[i].style.height = "50%"
-        }
-    }
-}
-
-updateTab = (currentTab, favicon = "", title = "") => {
-    let tabs = document.querySelectorAll(".tabs");
-    
-    for (let i = 0; i < tabs.length; ++i) {
-        if (i == currentTab)
-        {
-            if (title) tabs[i].querySelector('.tab-title').innerHTML = title; 
-            if (favicon) tabs[i].querySelector('.tab-icon').src = favicon; 
-        }
-    }
-}
-
-let webview = document.querySelector('webview')
-let tabs = document.querySelectorAll(".tab");
-
-webview.openDevTools()
-
-for (let tab of tabs) {
-    tab.addEventListener("click",  (e) => {
+    create(url) {
+        const lastTab = this.tabs.length;
+        document.querySelector('.tab-new').remove();
+        const newTab = `
+            <div class="tab" data-url="${url}" data-id="${lastTab}">
+                <img src="http://www.google.com/s2/favicons?domain=${new URL(url).hostname}" alt="" class="tab-icon">
+                <p class="tab-title">
+                    Google
+                </p>
+                <img src="icons/close-k-10.png" alt="tab-close" class="tab-close">
+            </div>
+            <div class="tab tab-new">
+                <img src="icons/plus.png" alt="new-tab" class="">
+            </div>
+        `
+        // const newView = `
+        //     <webview class="view" data-id="${lastTab}" src="${url}" style="width:100%; height:96%"></webview>
+        // `
+        const newView = document.createElement('webview')
+        newView.className = 'view'
+        newView.dataset.id = lastTab
+        newView.src = url
+        newView.style.width = "100%"
+        newView.style.height = "96%"
         
-            setTabState(currentTab, false);
-            setTabState(e.target.dataset.id, true);
-            currentTab = e.target.dataset.id;
-        
+        newView.addEventListener('did-navigate-in-page', (e) => {
+            this.update(`http://www.google.com/s2/favicons?domain=${new URL(e.url).hostname}`, this.currentTab.getTitle())
+        })
+        newView.addEventListener('did-start-navigation', (e) => {
+            this.update(`http://www.google.com/s2/favicons?domain=${new URL(this.currentTab.getURL()).hostname}`, this.currentTab.getTitle())
+        })
+        this.currentTab = newView;
+        document.querySelector('.tabs').innerHTML += newTab;
+        document.querySelector('#main').appendChild(newView);
+        const tabs = document.querySelectorAll(".tab:not(.tab-new)");
+        for (let tab of tabs)
+        tab.addEventListener("click", (e) => {
+            this.show(tab.dataset.id)
+            console.log(tab.dataset.id)
+            
+        })
+        document.querySelector('.tab-new').addEventListener('click', () => { this.create('http://google.com') })
+        this.tabs.push(newView)
+    }
 
-    })
+    show(tabIndex) {
+        this.currentTab.style.width = 0
+        this.currentTab.style.height = 0
+        this.currentTab = this.tabs[tabIndex]
+        this.currentTab.style.width = "100%"
+        this.currentTab.style.height = "96%"
+    }
+    update(favicon = "", title = "") {
+        let tabs = document.querySelectorAll(".tab");
+        console.log(tabs, tabs[this.currentTab.dataset.id])
+        if (title) tabs[this.currentTab.dataset.id].querySelector('.tab-title').innerHTML = title;
+        if (favicon) tabs[this.currentTab.dataset.id].querySelector('.tab-icon').src = favicon;
+    }
 }
-
-document.querySelector('.tab-new').addEventListener('click', () => {createTab('http://google.com')})
-webview.addEventListener('did-navigate-in-page', (e) => {
-    updateTab(currentTab, `http://www.google.com/s2/favicons?domain=${new URL(e.url).hostname}`, webview.getTitle())
-})
-webview.addEventListener('did-start-navigation', (e) => {
-    updateTab(currentTab, `http://www.google.com/s2/favicons?domain=${new URL(webview.getURL()).hostname}`, webview.getTitle())
-})
 class Downloads {
-    constructor () {
-      this.downloads = {}
-      this.urls = []
+    constructor() {
+        this.downloads = {}
+        this.urls = []
     }
-  
+
     createDownload(filename, url, totalBytes, receivedBytes, savePath) {
-      this.downloads[url] = {
-        filename: filename,
-        url: url,
-        totalBytes: totalBytes,
-        receivedBytes: receivedBytes,
-        savePath: savePath
-      }
-      this.urls.push[url]
-      document.querySelector(`.downloads-modal`).innerHTML += `
+        this.downloads[url] = {
+            filename: filename,
+            url: url,
+            totalBytes: totalBytes,
+            receivedBytes: receivedBytes,
+            savePath: savePath
+        }
+        this.urls.push[url]
+        document.querySelector(`.downloads-modal`).innerHTML += `
         <li class="download-item" data-url="${url}">
           <img class="favicon" />
           <div style="display: block;">
@@ -169,17 +149,17 @@ class Downloads {
       `
     }
     updateDownload(filename, url, totalBytes, receivedBytes, savePath) {
-      this.downloads[url] = {
-        filename: filename,
-        url: url,
-        totalBytes: totalBytes,
-        receivedBytes: receivedBytes,
-        savePath: savePath
-      }
-      
-      document.querySelector(`.download-item[data-url="${url}"`).remove()
-  
-      document.querySelector(`.downloads-modal`).innerHTML += `
+        this.downloads[url] = {
+            filename: filename,
+            url: url,
+            totalBytes: totalBytes,
+            receivedBytes: receivedBytes,
+            savePath: savePath
+        }
+
+        document.querySelector(`.download-item[data-url="${url}"`).remove()
+
+        document.querySelector(`.downloads-modal`).innerHTML += `
         <li class="download-item" data-url="${url}">
           <img class="favicon" />
           <div style="display: block;">
@@ -193,10 +173,11 @@ class Downloads {
         </li>
       `
     }
-  }
-  
-const downloads = new Downloads()
+}
 
+const downloads = new Downloads()
+const tabs = new Tabs()
+tabs.create('https://google.com')
 
 
 ipc.on("download-started", (e, msg) => {
@@ -209,3 +190,5 @@ ipc.on("download-updated", (e, msg) => {
     downloads.updateDownload(item.filename, item.url, item.totalBytes, item.receivedBytes, item.savePath)
     console.log(`download updated: ${item}`)
 })
+window.tabs = tabs
+window.downloads = downloads
