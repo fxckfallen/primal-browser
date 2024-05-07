@@ -196,6 +196,8 @@ body {
   margin-left: 8px;
   margin-top: 0px;
   color: #FFF;
+  max-width: 100px;
+  overflow: hidden;
 }
 .tab-close {
   display: none;

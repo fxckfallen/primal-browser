@@ -62,6 +62,7 @@ function setTabState (tabIndex, state = false) {
     for (let i = 0; i < tabs.length; ++i) {
         if (i == tabIndex) tabs[i].style.height = state ? "96%" : "0%"
     }
+    currentTab = tabIndex
 }
 
 createTab = (url) => {
@@ -86,7 +87,7 @@ createTab = (url) => {
     document.querySelector('.tabs').innerHTML += newTab;
     document.querySelector('#main').innerHTML += newView;
     document.querySelector('.tab-new').addEventListener('click', () => {createTab('http://google.com')})
-
+    currentTab = lastTab;
 }
 
 function splitTabs(tabLeft, tabRight) {
@@ -118,6 +119,8 @@ updateTab = (currentTab, favicon = "", title = "") => {
 let webview = document.querySelector('webview')
 let tabs = document.querySelectorAll(".tab");
 
+webview.openDevTools()
+
 for (let tab of tabs) {
     tab.addEventListener("click",  (e) => {
         
@@ -132,6 +135,9 @@ for (let tab of tabs) {
 document.querySelector('.tab-new').addEventListener('click', () => {createTab('http://google.com')})
 webview.addEventListener('did-navigate-in-page', (e) => {
     updateTab(currentTab, `http://www.google.com/s2/favicons?domain=${new URL(e.url).hostname}`, webview.getTitle())
+})
+webview.addEventListener('did-start-navigation', (e) => {
+    updateTab(currentTab, `http://www.google.com/s2/favicons?domain=${new URL(webview.getURL()).hostname}`, webview.getTitle())
 })
 class Downloads {
     constructor () {
@@ -189,11 +195,11 @@ class Downloads {
     }
   }
   
-  const downloads = new Downloads()
+const downloads = new Downloads()
 
 
 
-  ipc.on("download-started", (e, msg) => {
+ipc.on("download-started", (e, msg) => {
     const item = JSON.parse(msg)
     downloads.createDownload(item.filename, item.url, item.totalBytes, item.receivedBytes, item.savePath)
     console.log(`download started: ${item}`)

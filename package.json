@@ -1,7 +1,7 @@
 {
-  "name": "electron-seamless-titlebar-tutorial",
+  "name": "primal-browser",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "A minimal Electron browser",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
