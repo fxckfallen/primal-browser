@@ -84,6 +84,17 @@ class Tabs {
         newView.src = url
         newView.style.width = "100%"
         newView.style.height = "96%"
+        newView.setAttribute(
+            'preload',
+            `${__dirname}/webview-preload`,
+          );
+        newView.addEventListener('ipc-message', (event) => {
+            if (event.channel == 'new-tab') {
+                // console.log(event.args, event.args[0].link)
+                this.create(event.args[0]['link'])
+                
+            }
+          });
         
         newView.addEventListener('did-navigate-in-page', (e) => {
             this.update(`http://www.google.com/s2/favicons?domain=${new URL(e.url).hostname}`, this.currentTab.getTitle())
@@ -92,6 +103,7 @@ class Tabs {
             this.update(`http://www.google.com/s2/favicons?domain=${new URL(this.currentTab.getURL()).hostname}`, this.currentTab.getTitle())
         })
         this.currentTab = newView;
+        
         document.querySelector('.tabs').innerHTML += newTab;
         document.querySelector('#main').appendChild(newView);
         const tabs = document.querySelectorAll(".tab:not(.tab-new)");
@@ -103,6 +115,7 @@ class Tabs {
         })
         document.querySelector('.tab-new').addEventListener('click', () => { this.create('http://google.com') })
         this.tabs.push(newView)
+        this.show(this.currentTab.dataset.id)
     }
 
     show(tabIndex) {
@@ -114,7 +127,6 @@ class Tabs {
     }
     update(favicon = "", title = "") {
         let tabs = document.querySelectorAll(".tab");
-        console.log(tabs, tabs[this.currentTab.dataset.id])
         if (title) tabs[this.currentTab.dataset.id].querySelector('.tab-title').innerHTML = title;
         if (favicon) tabs[this.currentTab.dataset.id].querySelector('.tab-icon').src = favicon;
     }
@@ -177,7 +189,7 @@ class Downloads {
 
 const downloads = new Downloads()
 const tabs = new Tabs()
-tabs.create('https://google.com')
+tabs.create('https://yandex.com')
 
 
 ipc.on("download-started", (e, msg) => {
