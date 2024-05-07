@@ -102,6 +102,10 @@ class Tabs {
         newView.addEventListener('did-start-navigation', (e) => {
             this.update(`http://www.google.com/s2/favicons?domain=${new URL(this.currentTab.getURL()).hostname}`, this.currentTab.getTitle())
         })
+        if (this.currentTab) {
+            this.currentTab.style.width = 0
+            this.currentTab.style.height = 0
+        }
         this.currentTab = newView;
         
         document.querySelector('.tabs').innerHTML += newTab;
@@ -115,7 +119,7 @@ class Tabs {
         })
         document.querySelector('.tab-new').addEventListener('click', () => { this.create('http://google.com') })
         this.tabs.push(newView)
-        this.show(this.currentTab.dataset.id)
+        
     }
 
     show(tabIndex) {
@@ -185,11 +189,17 @@ class Downloads {
         </li>
       `
     }
+    pause(url) {
+        ipc.send('pause-download', url)
+    }
+    cancel(url) {
+        ipc.send('cancel-download', url)
+    }
 }
 
 const downloads = new Downloads()
 const tabs = new Tabs()
-tabs.create('https://yandex.com')
+tabs.create('https://google.com')
 
 
 ipc.on("download-started", (e, msg) => {
