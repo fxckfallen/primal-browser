@@ -97,6 +97,7 @@ class Tabs {
           });
         
         newView.addEventListener('did-navigate-in-page', (e) => {
+            document.querySelector('.urlbar input').value = e.url
             this.update(`http://www.google.com/s2/favicons?domain=${new URL(e.url).hostname}`, this.currentTab.getTitle())
         })
         newView.addEventListener('did-start-navigation', (e) => {
@@ -111,18 +112,28 @@ class Tabs {
         document.querySelector('.tabs').innerHTML += newTab;
         document.querySelector('#main').appendChild(newView);
         const tabs = document.querySelectorAll(".tab:not(.tab-new)");
-        for (let tab of tabs)
-        tab.addEventListener("click", (e) => {
-            this.show(tab.dataset.id)
-            console.log(tab.dataset.id)
-            
-        })
+        for (let tab of tabs) {
+            tab.addEventListener("click", (e) => {
+                if (e.target.classList.contains('.tab-close'))
+                    return
+                this.show(tab.dataset.id)
+                console.log(tab.dataset.id)
+                
+            })
+            tab.querySelector('.tab-close').addEventListener("click", (e) => {
+                console.log(tab.dataset.id)
+                this.close(tab.dataset.id)
+                console.log(tab.dataset.id)
+                
+            })
+        }
         document.querySelector('.tab-new').addEventListener('click', () => { this.create('http://google.com') })
         this.tabs.push(newView)
         
     }
 
     show(tabIndex) {
+        console.log(this.tabs, tabIndex)
         this.currentTab.style.width = 0
         this.currentTab.style.height = 0
         this.currentTab = this.tabs[tabIndex]
@@ -133,6 +144,27 @@ class Tabs {
         let tabs = document.querySelectorAll(".tab");
         if (title) tabs[this.currentTab.dataset.id].querySelector('.tab-title').innerHTML = title;
         if (favicon) tabs[this.currentTab.dataset.id].querySelector('.tab-icon').src = favicon;
+    }
+
+    close(tabIndex) {
+        let flag = false;
+        for (let t of this.tabs) {
+            if (t != null) {
+                flag = true
+                break;
+            }
+        }
+        if (flag == false)
+            win.close();
+        let i = this.tabs.length-1;
+        while (this.tabs[i] != null)
+            i--;
+        const tab = document.querySelector(`.tab[data-id='${tabIndex}']`)
+        tab.remove();
+        this.tabs[tabIndex].remove()
+        this.tabs[tabIndex] = null;
+        this.show(this.tabs[i])
+        
     }
 }
 class Downloads {
@@ -212,5 +244,25 @@ ipc.on("download-updated", (e, msg) => {
     downloads.updateDownload(item.filename, item.url, item.totalBytes, item.receivedBytes, item.savePath)
     console.log(`download updated: ${item}`)
 })
+
+document.querySelector('.web-controls .control.back').addEventListener('click', (e) => {
+    tabs.currentTab.goBack()
+})
+
+document.querySelector('.web-controls .control.forward').addEventListener('click', (e) => {
+    tabs.currentTab.goForward()
+})
+
+document.querySelector('.web-controls .control.reload').addEventListener('click', (e) => {
+    tabs.currentTab.reload()
+})
+
+document.querySelector('.urlbar input').addEventListener("keypress", function(event) {
+    // If the user presses the "Enter" key on the keyboard
+    if (event.key === "Enter") {
+      tabs.currentTab.loadURL(event.target.value)
+    }
+  }); 
+
 window.tabs = tabs
 window.downloads = downloads

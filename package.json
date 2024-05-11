@@ -4,13 +4,26 @@
   "description": "A minimal Electron browser",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "primal-browser",
+    "dmg": {
+      "title": "${productName} ${version}"
+    },
+    
+    "win": {
+      "target": "NSIS",
+      "icon": ""
+    }
   },
   "repository": "https://github.com/binaryfunt/electron-seamless-titlebar-tutorial",
   "author": "binaryfunt",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^9.4.0"
+    "electron": "^9.4.0",
+    "electron-builder": "^19.52.1"
   },
   "dependencies": {
     "electron-tabs": "^1.0.4",

@@ -8,7 +8,7 @@ npm start
 - [x] tabs
 - [x] downloads
 - [ ] settings
-- [ ] url-bar
+- [x] url-bar
 - [ ] plugins
 - [ ] bookmarks
 - [ ] building
